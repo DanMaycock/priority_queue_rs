@@ -3,14 +3,14 @@ use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::rc::{Rc, Weak};
 
-type QueueIndex = Weak<RefCell<usize>>;
+pub type QueueIndex = Weak<RefCell<usize>>;
 
-pub struct QueueItem<T: PartialOrd + PartialEq + Debug> {
+pub struct QueueItem<T: PartialOrd + PartialEq> {
     entry: T,
     index: Rc<RefCell<usize>>,
 }
 
-impl<T: PartialOrd + PartialEq + Debug> QueueItem<T> {
+impl<T: PartialOrd + PartialEq> QueueItem<T> {
     fn new(entry: T, index: usize) -> Self {
         QueueItem {
             entry,
@@ -19,13 +19,13 @@ impl<T: PartialOrd + PartialEq + Debug> QueueItem<T> {
     }
 }
 
-impl<T: PartialOrd + PartialEq + Debug> PartialEq for QueueItem<T> {
+impl<T: PartialOrd + PartialEq> PartialEq for QueueItem<T> {
     fn eq(&self, other: &QueueItem<T>) -> bool {
         self.entry == other.entry
     }
 }
 
-impl<T: PartialOrd + PartialEq + Debug> PartialOrd for QueueItem<T> {
+impl<T: PartialOrd + PartialEq> PartialOrd for QueueItem<T> {
     fn partial_cmp(&self, other: &QueueItem<T>) -> Option<Ordering> {
         self.entry.partial_cmp(&other.entry)
     }
@@ -53,16 +53,11 @@ impl<T: PartialOrd + PartialEq + Debug> PriorityQueue<T> {
     }
 
     pub fn push(&mut self, entry: T) -> QueueIndex {
-        println!("Push");
         let index = self.queue.len();
         let item = QueueItem::new(entry, index);
         let item_index = Rc::downgrade(&item.index);
         self.queue.push(item);
         self.sift_up(index);
-        for (index, item) in self.queue.iter().enumerate() {
-            print!("{} : {:?}, ", index, item.entry);
-        }
-        println!("");
         item_index
     }
 
@@ -77,8 +72,7 @@ impl<T: PartialOrd + PartialEq + Debug> PriorityQueue<T> {
         }
     }
 
-    pub fn remove_event(&mut self, index: QueueIndex) {
-        println!("Removing event");
+    pub fn remove(&mut self, index: QueueIndex) {
         if let Some(index) = index.upgrade() {
             let index = *index.borrow();
             self.swap(index, self.queue.len() - 1);
@@ -125,7 +119,6 @@ impl<T: PartialOrd + PartialEq + Debug> PriorityQueue<T> {
     }
 
     fn swap(&mut self, idx_1: usize, idx_2: usize) {
-        println!("swapping entries at {} and {}", idx_1, idx_2);
         self.queue.swap(idx_1, idx_2);
         *self.queue[idx_1].index.borrow_mut() = idx_1;
         *self.queue[idx_2].index.borrow_mut() = idx_2;
@@ -157,7 +150,7 @@ mod tests {
         queue.push(2.0);
         queue.push(0.5);
 
-        queue.remove_event(index);
+        queue.remove(index);
 
         assert_eq!(queue.pop().unwrap(), 0.5);
         assert_eq!(queue.pop().unwrap(), 2.0);
@@ -189,7 +182,7 @@ mod tests {
         let index = queue.push(1.0);
         queue.push(2.0);
 
-        queue.remove_event(index);
+        queue.remove(index);
 
         queue.push(0.5);
 
