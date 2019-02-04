@@ -1,6 +1,6 @@
+use core::iter::FromIterator;
 use std::cell::RefCell;
 use std::cmp::Ordering;
-use std::fmt::Debug;
 use std::rc::{Rc, Weak};
 
 pub type QueueIndex = Weak<RefCell<usize>>;
@@ -31,7 +31,7 @@ impl<T: PartialOrd + PartialEq> PartialOrd for QueueItem<T> {
     }
 }
 
-pub struct PriorityQueue<T: PartialOrd + PartialEq + Debug> {
+pub struct PriorityQueue<T: PartialOrd + PartialEq> {
     queue: Vec<QueueItem<T>>,
 }
 
@@ -47,7 +47,7 @@ fn get_right(index: usize) -> usize {
     2 * (index + 1)
 }
 
-impl<T: PartialOrd + PartialEq + Debug> PriorityQueue<T> {
+impl<T: PartialOrd + PartialEq> PriorityQueue<T> {
     pub fn new() -> Self {
         PriorityQueue { queue: vec![] }
     }
@@ -125,6 +125,16 @@ impl<T: PartialOrd + PartialEq + Debug> PriorityQueue<T> {
     }
 }
 
+impl<T: PartialOrd + PartialEq> FromIterator<T> for PriorityQueue<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut c = PriorityQueue::new();
+        for i in iter {
+            c.push(i);
+        }
+        c
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -190,5 +200,16 @@ mod tests {
         assert_eq!(queue.pop().unwrap(), 2.0);
 
         assert!(queue.pop().is_none());
+    }
+
+    #[test]
+    fn test_from_iterator() {
+        let vec = vec![0.5, 2.0, 1.0];
+
+        let mut queue: PriorityQueue<f64> = vec.iter().map(|&i| i).collect();
+
+        assert_eq!(queue.pop().unwrap(), 0.5);
+        assert_eq!(queue.pop().unwrap(), 1.0);
+        assert_eq!(queue.pop().unwrap(), 2.0);
     }
 }
