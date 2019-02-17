@@ -123,6 +123,44 @@ impl<T: PartialOrd + PartialEq> PriorityQueue<T> {
         *self.queue[idx_1].index.borrow_mut() = idx_1;
         *self.queue[idx_2].index.borrow_mut() = idx_2;
     }
+
+    /** Iterates over all items in the queue and returns the first entry that matches the given predicate */
+    pub fn find<P>(&self, predicate: P) -> Option<QueueIndex>
+    where
+        P: Fn(&T) -> bool,
+    {
+        if let Some(item) = self.queue.iter().find(|item| predicate(&item.entry)) {
+            Some(Rc::downgrade(&item.index))
+        } else {
+            None
+        }
+    }
+
+    pub fn find_all<P>(&self, predicate: P) -> Vec<QueueIndex>
+    where
+        P: Fn(&T) -> bool,
+    {
+        self.queue
+            .iter()
+            .filter_map(|item| {
+                if predicate(&item.entry) {
+                    Some(Rc::downgrade(&item.index))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn remove_all<P>(&mut self, predicate: P)
+    where
+        P: Fn(&T) -> bool,
+    {
+        let indices_to_remove = self.find_all(predicate);
+        for index in indices_to_remove {
+            self.remove(index);
+        }
+    }
 }
 
 impl<T: PartialOrd + PartialEq> FromIterator<T> for PriorityQueue<T> {
